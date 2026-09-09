@@ -1,0 +1,23 @@
+{
+  "name": "campus-token-dapp",
+  "version": "1.0.0",
+  "description": "Blockchain-based classroom attendance and token reward DApp built with Solidity, Hardhat, React, and ethers.js.",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/swenwang/campus.git"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@openzeppelin/contracts": "^5.6.1",
+    "hardhat": "^2.22.17"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  }
+}
