@@ -1,5 +1,7 @@
 # Campus Token DApp
 
+🔗 **Live Demo:** https://swenwang.github.io/campus/
+
 A blockchain-based classroom attendance and reward system built with Solidity, Hardhat, React, ethers.js, and MetaMask on the Sepolia test network.
 
 ## Overview
