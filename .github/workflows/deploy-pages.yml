@@ -7,8 +7,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -20,19 +18,58 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Redacted public-source scan
+        shell: pwsh
+        run: ./scripts/check-public.ps1
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
+
+      - name: Frontend checks
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm test
+
+      - name: Install contract dependencies
+        run: npm ci
+
+      - name: Contract checks
+        run: |
+          npm run typecheck
+          npm test
 
       - name: Build
         working-directory: frontend
+        env:
+          VITE_A_TOKEN_ADDRESS: ${{ vars.VITE_A_TOKEN_ADDRESS }}
+          VITE_B_TOKEN_ADDRESS: ${{ vars.VITE_B_TOKEN_ADDRESS }}
+          VITE_EXCHANGE_ADDRESS: ${{ vars.VITE_EXCHANGE_ADDRESS }}
         run: npm run build
+
+      - name: Block high-risk development dependencies
+        run: npm audit --audit-level=high
+
+      - name: Check frontend dependency advisories
+        working-directory: frontend
+        run: npm audit --audit-level=high
+
+      - name: Install browser for smoke tests
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser smoke tests
+        working-directory: frontend
+        run: npm run test:e2e
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -43,6 +80,9 @@ jobs:
           path: frontend/dist
 
   deploy:
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

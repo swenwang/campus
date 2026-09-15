@@ -241,3 +241,9 @@ footer { border-top: 1px solid #e0e4ea; background: white; }
   .action-heading { display: grid; }
   .role-pill, .rate-pill { justify-self: start; }
 }
+
+button:disabled { opacity: .55; cursor: not-allowed; }
+.security-notice { padding: 16px; border: 1px solid #b45309; border-radius: 12px; background: #fffbeb; color: #78350f; line-height: 1.6; }
+.status-bar { overflow-wrap: anywhere; }
+input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #6366f1; outline-offset: 3px; }
+.walkthrough-result { display: flex; gap: 20px; align-items: center; justify-content: space-between; flex-wrap: wrap; padding: 20px 0; }

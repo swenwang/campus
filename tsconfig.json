@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
     "target": "es2020",
-    "module": "node16",
-    "moduleResolution": "node16",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "strict": true,
     "esModuleInterop": true,
     "outDir": "dist",
@@ -11,7 +11,7 @@
     "sourceMap": true,
     "skipLibCheck": true,
     "noImplicitAny": false,
-    "ignoreDeprecations": "6.0"
+    "ignoreDeprecations": "5.0"
   },
   "include": ["./scripts", "./test", "./typechain-types", "hardhat.config.ts"],
   "exclude": ["node_modules"]

@@ -1,10 +1,14 @@
 {
   "name": "campus-token-dapp",
   "version": "1.0.0",
+  "private": true,
+  "type": "module",
   "description": "Blockchain-based classroom attendance and token reward DApp built with Solidity, Hardhat, React, and ethers.js.",
   "scripts": {
-    "compile": "hardhat compile",
+    "compile": "hardhat build",
+    "check:solidity": "node scripts/check-solidity.cjs",
     "test": "hardhat test",
+    "typecheck": "tsc --noEmit",
     "deploy:sepolia": "hardhat run scripts/deploy.ts --network sepolia"
   },
   "repository": {
@@ -13,9 +17,24 @@
   },
   "license": "ISC",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-ethers": "^4.0.0",
+    "@nomicfoundation/hardhat-ethers-chai-matchers": "^3.0.0",
+    "@nomicfoundation/hardhat-mocha": "^3.0.0",
+    "@types/chai": "^5.2.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^22.15.0",
+    "chai": "^5.2.0",
+    "ethers": "^6.16.0",
+    "typescript": "5.8.3",
+    "solc": "0.8.37",
     "@openzeppelin/contracts": "^5.6.1",
-    "hardhat": "^2.22.17"
+    "hardhat": "^3.16.0"
+  },
+  "engines": { "node": ">=22.13.0 <23" },
+  "overrides": {
+    "tmp": "0.2.7",
+    "serialize-javascript": "7.0.5",
+    "diff": "8.0.3"
   },
   "dependencies": {
     "dotenv": "^17.4.2"
