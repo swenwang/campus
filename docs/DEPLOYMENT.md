@@ -14,6 +14,8 @@ npm ci
 npm test
 npm run lint
 npm run build
+npx playwright install chromium
+npm run test:e2e
 npm run dev
 ```
 

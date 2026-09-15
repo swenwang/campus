@@ -4,6 +4,8 @@
 
 [Explore the demo](https://swenwang.github.io/campus/) · [Run & deploy](docs/DEPLOYMENT.md) · [Security & limitations](SECURITY.md)
 
+**Validated:** 21 contract tests · 17 frontend unit tests · 6 browser smoke tests · production build · 0 reported dependency vulnerabilities at the recorded check. [Verification record](docs/VALIDATION.md).
+
 Campus Token explores a simple question: how can verified classroom participation become a transparent reward? A teacher issues a wallet-bound attendance credential, a student claims participation tokens, and a smart contract converts them into a separate reward token.
 
 ## Try it in one minute
@@ -75,7 +77,7 @@ The Vite app uses the `/campus/` base path. Tests and the walkthrough need no re
 
 Contract cases cover valid/repeated/expired attendance, wrong recipients and domains, owner permissions, tier-crossing orders, stale quotes, allowance failures, supply limits and rollback after failed minting. Frontend tests cover provider errors/events, transaction account guards, exact decimal parsing, signature context and walkthrough progression.
 
-See the [GitHub Actions checks](https://github.com/swenwang/campus/actions) for the latest executable result. A successful test run does not establish real-world student identity, prove physical attendance or replace a security audit.
+Browser smoke tests also exercise the wallet-free walkthrough, missing/rejected wallet access, a simulated provider's successful connection and account change, legacy read-only mode and mobile overflow. See the [GitHub Actions checks](https://github.com/swenwang/campus/actions) for the latest executable result. A successful test run does not establish real-world student identity, prove physical attendance or replace a security audit.
 
 ## Scope and next steps
 
