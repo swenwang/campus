@@ -1,6 +1,14 @@
-import { ethers } from "hardhat";
+import { network } from "hardhat";
+import { mkdir, writeFile } from "node:fs/promises";
 
 async function main() {
+  const { ethers } = await network.connect();
+  const chainId = (await ethers.provider.getNetwork()).chainId;
+  if (chainId !== 11155111n && chainId !== 31337n) {
+    throw new Error("Only Sepolia or a local Hardhat network is supported");
+  }
+  const [deployer] = await ethers.getSigners();
+  if (!deployer) throw new Error("No deployment account configured");
   console.log("開始部署合約...");
 
   // 1. 部署 AToken
@@ -38,6 +46,13 @@ async function main() {
   }
 
   console.log(`BToken ownership 已轉交 RewardExchange: ${bTokenOwner}`);
+  await mkdir("deployments", { recursive: true });
+  // Public addresses only; never serialize provider configuration or signer objects.
+  await writeFile(`deployments/${chainId}.json`, JSON.stringify({
+    chainId: chainId.toString(), version: 2,
+    aToken: aTokenAddress, bToken: bTokenAddress, exchange: exchangeAddress,
+    teacher: await aToken.owner(),
+  }, null, 2) + "\n");
 
   console.log("\n--- 部署成果摘要 ---");
   console.log(`AToken 地址: ${aTokenAddress}`);
@@ -47,7 +62,8 @@ async function main() {
   console.log("-------------------");
 }
 
-main().catch((error) => {
-  console.error(error);
+main().catch(() => {
+  // Provider errors can contain RPC API credentials; do not dump them into logs.
+  console.error("Deployment failed. Check local configuration, Sepolia ETH, and any deployment transactions already submitted. Never post private keys or raw RPC error logs.");
   process.exitCode = 1;
 });

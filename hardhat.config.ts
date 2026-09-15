@@ -1,10 +1,16 @@
-import { HardhatUserConfig } from "hardhat/config";
-import "@nomicfoundation/hardhat-toolbox";
+import { defineConfig, configVariable } from "hardhat/config";
+import hardhatEthers from "@nomicfoundation/hardhat-ethers";
+import hardhatChai from "@nomicfoundation/hardhat-ethers-chai-matchers";
+import hardhatMocha from "@nomicfoundation/hardhat-mocha";
+import { createRequire } from "node:module";
 import "dotenv/config";
-
-const config: HardhatUserConfig = {
+const require = createRequire(import.meta.url);
+export default defineConfig({
+  plugins: [hardhatEthers, hardhatChai, hardhatMocha],
   solidity: {
-    version: "0.8.28",
+    version: "0.8.37",
+    path: require.resolve("solc/soljson.js"),
+    preferWasm: true,
     settings: {
       optimizer: { enabled: true, runs: 200 },
       evmVersion: "cancun"
@@ -12,13 +18,11 @@ const config: HardhatUserConfig = {
   },
   networks: {
     sepolia: {
-      url: process.env.SEPOLIA_RPC_URL || "",
-      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      type: "http",
+      chainType: "l1",
+      chainId: 11155111,
+      url: configVariable("SEPOLIA_RPC_URL"),
+      accounts: [configVariable("PRIVATE_KEY")],
     },
   },
-  etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY,
-  },
-};
-
-export default config;
+});

@@ -1,22 +1,7 @@
-import { useEffect, useState } from 'react';
-import { ethers } from 'ethers';
+import { useCampus } from './useCampus';
+import { A_ADDRESS, B_ADDRESS, EX_ADDRESS } from './protocol';
 import './tokenomics.css';
-
-const A_ADDRESS = '0xf2E21e7355E4e550E7053250ABE5a8d6849722ef';
-const B_ADDRESS = '0x20435cB6da6dC84C56889E2568FB049034ed2C6d';
-const EX_ADDRESS = '0x082aE3a47069edBCbB159Ef361509ff67468b10B';
-
-const A_ABI = [
-  'function balanceOf(address) view returns (uint256)',
-  'function approve(address spender, uint256 value) returns (bool)',
-  'function claimToken(string classId, bytes signature)',
-  'function owner() view returns (address)'
-];
-const B_ABI = ['function balanceOf(address) view returns (uint256)'];
-const EX_ABI = [
-  'function getCurrentRate() view returns (uint256)',
-  'function exchangeForB(uint256 amountB)'
-];
+import DemoWalkthrough from './DemoWalkthrough.jsx';
 
 const features = [
   {
@@ -42,123 +27,7 @@ function shortAddress(address) {
 }
 
 export default function App() {
-  const [account, setAccount] = useState('');
-  const [isTeacher, setIsTeacher] = useState(false);
-  const [aBalance, setABalance] = useState('0');
-  const [bBalance, setBBalance] = useState('0');
-  const [rate, setRate] = useState('0');
-  const [classId, setClassId] = useState('');
-  const [signature, setSignature] = useState('');
-  const [amountB, setAmountB] = useState('');
-  const [status, setStatus] = useState('Connect your wallet to launch the live workspace.');
-
-  async function connectWallet() {
-    try {
-      if (!window.ethereum) {
-        setStatus('MetaMask is required to use the live DApp.');
-        return;
-      }
-      await window.ethereum.request({
-        method: 'wallet_switchEthereumChain',
-        params: [{ chainId: '0xaa36a7' }],
-      });
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const address = accounts[0];
-      setAccount(address);
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const aToken = new ethers.Contract(A_ADDRESS, A_ABI, provider);
-      const owner = await aToken.owner();
-      setIsTeacher(address.toLowerCase() === owner.toLowerCase());
-      setStatus('Wallet connected to Sepolia. Live contract data is ready.');
-    } catch (error) {
-      console.error(error);
-      setStatus('Wallet connection failed. Confirm that MetaMask is available and Sepolia is enabled.');
-    }
-  }
-
-  async function loadData() {
-    if (!account || !window.ethereum) return;
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const aToken = new ethers.Contract(A_ADDRESS, A_ABI, provider);
-    const bToken = new ethers.Contract(B_ADDRESS, B_ABI, provider);
-    const exchange = new ethers.Contract(EX_ADDRESS, EX_ABI, provider);
-    const [a, b, currentRate] = await Promise.all([
-      aToken.balanceOf(account),
-      bToken.balanceOf(account),
-      exchange.getCurrentRate(),
-    ]);
-    setABalance(ethers.formatEther(a));
-    setBBalance(ethers.formatEther(b));
-    setRate(currentRate.toString());
-  }
-
-  async function signAttendance() {
-    try {
-      if (!classId.trim()) {
-        setStatus('Enter a class ID before generating a signature.');
-        return;
-      }
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const messageHash = ethers.solidityPackedKeccak256(['string'], [classId.trim()]);
-      const sig = await signer.signMessage(ethers.getBytes(messageHash));
-      setSignature(sig);
-      setStatus('Attendance credential generated. Share the class ID and signature with the student.');
-    } catch (error) {
-      console.error(error);
-      setStatus('Signature generation failed.');
-    }
-  }
-
-  async function claimAttendance() {
-    try {
-      if (!classId.trim() || !signature.trim()) {
-        setStatus('Enter both the class ID and teacher signature.');
-        return;
-      }
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const aToken = new ethers.Contract(A_ADDRESS, A_ABI, signer);
-      setStatus('Submitting attendance claim to Sepolia…');
-      const tx = await aToken.claimToken(classId.trim(), signature.trim());
-      await tx.wait();
-      setStatus('Attendance verified. 10 ATK have been issued to your wallet.');
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      setStatus('Attendance claim failed. Check the class ID, signature, wallet and gas balance.');
-    }
-  }
-
-  async function approveAndExchange() {
-    try {
-      if (!amountB || Number(amountB) <= 0) {
-        setStatus('Enter a valid BToken amount.');
-        return;
-      }
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await provider.getSigner();
-      const aToken = new ethers.Contract(A_ADDRESS, A_ABI, signer);
-      const exchange = new ethers.Contract(EX_ADDRESS, EX_ABI, signer);
-      const parsedB = ethers.parseEther(amountB);
-      const requiredA = parsedB * BigInt(rate);
-      setStatus('Step 1 of 2 · Approving AToken spend…');
-      const approveTx = await aToken.approve(EX_ADDRESS, requiredA);
-      await approveTx.wait();
-      setStatus('Step 2 of 2 · Executing token exchange…');
-      const exchangeTx = await exchange.exchangeForB(parsedB);
-      await exchangeTx.wait();
-      setStatus('Exchange complete. Your token balances have been refreshed.');
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      setStatus('Exchange failed. Check your token balance and Sepolia gas balance.');
-    }
-  }
-
-  useEffect(() => {
-    loadData().catch(console.error);
-  }, [account]);
+  const { account, isTeacher, aBalance, bBalance, rate, secure, busy, status, classId, setClassId, signature, setSignature, student, setStudent, deadline, setDeadline, amountB, setAmountB, quote, txHash, connectWallet, signAttendance, claimAttendance, getQuote, approveAndExchange, revokeApproval } = useCampus();
 
   return (
     <div className="site-shell">
@@ -170,21 +39,21 @@ export default function App() {
           <a href="#solution">Solution</a>
           <a href="#token-economy">Token economy</a>
           <a href="#how-it-works">How it works</a>
-          <a href="#demo">Live demo</a>
+          <a href="#walkthrough">Try the demo</a>
         </nav>
-        <button className="nav-cta" onClick={connectWallet}>{account ? shortAddress(account) : 'Connect wallet'}</button>
+        <button className="nav-cta" disabled={busy} onClick={connectWallet}>{busy ? 'Please wait…' : account ? shortAddress(account) : 'Connect wallet'}</button>
       </header>
 
       <main id="top">
         <section className="hero section-wrap">
           <div className="hero-copy">
-            <div className="network-pill"><span className="network-dot" /> Live prototype · Ethereum Sepolia</div>
+            <div className="network-pill"><span className="network-dot" /> Portfolio prototype · Ethereum Sepolia</div>
             <h1>Turn campus participation into <span>verifiable value.</span></h1>
             <p className="hero-lede">
               A dual-token campus incentive system that transforms verified attendance into AToken, then lets students convert participation into BToken for a future campus-wide reward ecosystem.
             </p>
             <div className="hero-actions">
-              <button className="primary-cta" onClick={connectWallet}>Launch live demo <span>↗</span></button>
+              <a className="primary-cta" href="#walkthrough">Try without a wallet <span>↗</span></a>
               <a className="secondary-cta" href="#token-economy">See the token model</a>
             </div>
             <div className="hero-proof">
@@ -201,15 +70,15 @@ export default function App() {
                 <div className="window-brand"><span className="mini-mark">C</span> Campus Token</div>
                 <span className="sepolia-tag">Sepolia</span>
               </div>
-              <div className="window-balance-label">Participation balance</div>
+              <div className="window-balance-label">{account ? 'Participation balance' : 'Illustrative preview · not live balances'}</div>
               <div className="window-balance">{account ? Number(aBalance).toFixed(2) : '24.00'} <span>ATK</span></div>
               <div className="window-grid">
                 <div><span>Reward token</span><strong>{account ? Number(bBalance).toFixed(2) : '6.00'} BTK</strong></div>
-                <div><span>Exchange rate</span><strong>{rate || '4'} : 1</strong></div>
+                <div><span>Current tier rate</span><strong>{rate || '—'} : 1</strong></div>
               </div>
               <div className="window-activity">
                 <div className="activity-icon">✓</div>
-                <div><strong>Attendance verified</strong><span>Participation recorded on-chain</span></div>
+                <div><strong>Attendance reward</strong><span>10 ATK per valid credential</span></div>
                 <span className="activity-amount">+10 ATK</span>
               </div>
             </div>
@@ -290,7 +159,7 @@ export default function App() {
           <div className="section-wrap">
             <div className="section-heading dark-heading">
               <p className="kicker">How it works</p><h2>From attendance to a future campus reward.</h2>
-              <p>The prototype already implements attendance, AToken issuance and AToken-to-BToken exchange on Sepolia.</p>
+              <p>Version 2 adds wallet-bound attendance credentials and protected exchange quotes. Transaction actions require a version 2 deployment.</p>
             </div>
             <div className="flow-grid extended-flow">
               <div className="flow-step"><span>1</span><div><strong>Teacher signs attendance</strong><p>A unique class credential is signed by the instructor wallet.</p></div></div>
@@ -304,15 +173,17 @@ export default function App() {
           </div>
         </section>
 
+        <DemoWalkthrough />
+
         <section className="section-wrap demo-section" id="demo">
           <div className="demo-intro">
-            <div><p className="kicker">Live product demo</p><h2>Try the dual-token protocol on Sepolia.</h2></div>
-            <p>The deployed prototype supports wallet connection, attendance claims, AToken balances and live AToken-to-BToken exchange.</p>
+            <div><p className="kicker">Wallet workspace</p><h2>Inspect the protocol on Sepolia.</h2></div>
+            <p>Connect to inspect the configured Sepolia deployment. Attendance and exchange are enabled only for version 2 contracts.</p>
           </div>
 
           <div className="workspace">
             <div className="workspace-sidebar">
-              <div><span className="sidebar-label">Network</span><div className="sidebar-value"><span className="network-dot" /> Ethereum Sepolia</div></div>
+              <div><span className="sidebar-label">{account ? 'Connected network' : 'Target network'}</span><div className="sidebar-value"><span className="network-dot" /> Ethereum Sepolia</div></div>
               <div><span className="sidebar-label">Wallet</span><div className="sidebar-value">{account ? shortAddress(account) : 'Not connected'}</div></div>
               <div><span className="sidebar-label">Role</span><div className="sidebar-value">{account ? (isTeacher ? 'Teacher' : 'Student') : '—'}</div></div>
               <div className="contract-links">
@@ -328,10 +199,14 @@ export default function App() {
                 <div className="connect-state">
                   <div className="connect-orb">◈</div><h3>Connect your wallet to enter the workspace</h3>
                   <p>The demo will switch MetaMask to Sepolia and load balances from the deployed AToken, BToken and RewardExchange contracts.</p>
-                  <button className="primary-cta" onClick={connectWallet}>Connect MetaMask</button>
+                  <p>Connecting shares your public wallet address with this site. Never enter a seed phrase or private key here.</p>
+                  <button className="primary-cta" disabled={busy} onClick={connectWallet}>Connect MetaMask</button>
+                  <a href="https://metamask.io/download/" target="_blank" rel="noopener noreferrer">Get MetaMask</a>
                 </div>
               ) : (
                 <>
+                  {!secure && <p className="security-notice" role="alert">Legacy deployment: attendance and exchange are disabled because these contracts lack wallet-bound credentials and price protection. Deploy version 2 and configure its addresses to enable actions.</p>}
+                  <p className="future-use-note">Attendance claims publish the class ID and wallet address permanently on Sepolia. Use an opaque class code; do not include names, student numbers or other personal details.</p>
                   <div className="balance-grid">
                     <article className="balance-card"><span>A Token balance</span><strong>{Number(aBalance).toFixed(4)}</strong><small>ATK · participation layer</small></article>
                     <article className="balance-card"><span>B Token balance</span><strong>{Number(bBalance).toFixed(4)}</strong><small>BTK · reward layer</small></article>
@@ -343,9 +218,11 @@ export default function App() {
                       <div><span className="action-label">{isTeacher ? 'Teacher workspace' : 'Student workspace'}</span><h3>{isTeacher ? 'Create attendance credential' : 'Verify attendance & earn AToken'}</h3></div>
                       <span className="role-pill">{isTeacher ? 'Issuer' : 'Participant'}</span>
                     </div>
-                    <label><span>Class ID</span><input value={classId} onChange={(e) => setClassId(e.target.value)} placeholder="e.g. FINTECH-2026-09-09" /></label>
-                    <label><span>Teacher signature</span><textarea value={signature} onChange={(e) => setSignature(e.target.value)} placeholder={isTeacher ? 'Generated signature will appear here' : 'Paste the signature provided by the teacher'} rows="4" /></label>
-                    <button className="primary-cta full-width" onClick={isTeacher ? signAttendance : claimAttendance}>{isTeacher ? 'Generate signed credential' : 'Verify & claim 10 ATK'}</button>
+                    <label><span>Class ID</span><input disabled={busy || !secure} value={classId} onChange={(e) => { setClassId(e.target.value); if (isTeacher) setSignature(''); }} placeholder="e.g. FINTECH-2026-09-09" /></label>
+                    {isTeacher && <label><span>Student wallet address</span><input disabled={busy || !secure} value={student} onChange={(e) => { setStudent(e.target.value); setSignature(''); }} placeholder="0x…" /></label>}
+                    <label><span>Expiry (Unix timestamp supplied with the credential)</span><input disabled={busy || !secure} readOnly={isTeacher} value={deadline} onChange={(e) => setDeadline(e.target.value)} inputMode="numeric" placeholder="Generated by teacher" /></label>
+                    <label><span>Teacher signature</span><textarea disabled={busy || !secure} readOnly={isTeacher} value={signature} onChange={(e) => setSignature(e.target.value)} placeholder={isTeacher ? 'Generated signature will appear here' : 'Paste the signature provided by the teacher'} rows="4" /></label>
+                    <button className="primary-cta full-width" disabled={busy || !secure} onClick={isTeacher ? signAttendance : claimAttendance}>{isTeacher ? 'Generate 15-minute credential' : 'Verify & claim 10 ATK'}</button>
                   </div>
 
                   {!isTeacher && (
@@ -355,16 +232,20 @@ export default function App() {
                         <div><span className="action-label">Dual-token exchange</span><h3>Convert participation into reward value</h3></div>
                         <span className="rate-pill">{rate || '—'} ATK = 1 BTK</span>
                       </div>
-                      <p className="exchange-description">Choose how much BToken you want to receive. The smart contract calculates the required AToken, requests approval, then completes the conversion on-chain.</p>
-                      <label><span>BToken amount to receive</span><input value={amountB} onChange={(e) => setAmountB(e.target.value)} placeholder="Enter BTK amount" inputMode="decimal" /></label>
-                      <div className="exchange-preview"><span>You receive</span><strong>{amountB || '0'} BTK</strong><span>Required AToken</span><strong>{amountB && rate ? Number(amountB) * Number(rate) : 0} ATK</strong></div>
-                      <button className="primary-cta full-width" onClick={approveAndExchange}>Approve AToken & exchange to BToken</button>
+                      <p className="exchange-description">Get a quote first. Orders crossing a 5 BTK supply boundary include each tier's price. Your approval and maximum cost are limited to the reviewed quote.</p>
+                      <label><span>BToken amount to receive</span><input disabled={busy || !secure} value={amountB} onChange={(e) => setAmountB(e.target.value)} placeholder="Enter BTK amount" inputMode="decimal" /></label>
+                      <div className="exchange-preview"><span>You receive</span><strong>{amountB || '0'} BTK</strong><span>Maximum AToken cost</span><strong>{quote} ATK</strong></div>
+                      <button className="secondary-cta" disabled={busy || !secure} onClick={getQuote}>Get current quote</button>
+                      <button className="primary-cta full-width" disabled={busy || !secure || quote === '—'} onClick={approveAndExchange}>Approve quoted AToken & exchange</button>
                       <small className="future-use-note">Future vision · BToken can serve as the redemption currency for campus stores and partner rewards.</small>
                     </div>
                   )}
+                  <button className="secondary-cta" disabled={busy} onClick={revokeApproval}>Revoke exchange allowance</button>
+                  <p className="future-use-note">If an exchange is cancelled or fails after approval, use Revoke exchange allowance to remove any remaining authorization.</p>
                 </>
               )}
-              <div className="status-bar"><span className="status-pulse" /> <span>{status}</span></div>
+              <div className="status-bar" role="status" aria-live="polite"><span className="status-pulse" /> <span>{status}</span></div>
+              {txHash && <a href={`https://sepolia.etherscan.io/tx/${txHash}`} target="_blank" rel="noopener noreferrer">View latest transaction on Sepolia ↗</a>}
             </div>
           </div>
         </section>
@@ -372,11 +253,11 @@ export default function App() {
         <section className="section-wrap trust-section">
           <div className="trust-copy">
             <p className="kicker">Prototype scope</p><h2>A working core with a clear path to a wider ecosystem.</h2>
-            <p>The current Sepolia prototype implements attendance verification, AToken issuance and AToken-to-BToken exchange. Campus-store and merchant redemption is presented as a future product direction rather than an already deployed partnership.</p>
+            <p>The repository implements attendance verification, AToken issuance and AToken-to-BToken exchange. Version 2 requires a new deployment; legacy contracts are available for balance viewing only. Campus-store and merchant redemption remains a future product direction.</p>
           </div>
           <div className="trust-points">
-            <div><span>✓</span><p><strong>Working today</strong>Attendance → AToken</p></div>
-            <div><span>✓</span><p><strong>Working today</strong>AToken → BToken exchange</p></div>
+            <div><span>✓</span><p><strong>Version 2 protocol</strong>Attendance → AToken</p></div>
+            <div><span>✓</span><p><strong>Version 2 protocol</strong>AToken → BToken exchange</p></div>
             <div><span>→</span><p><strong>Next-stage vision</strong>Campus merchant rewards</p></div>
           </div>
         </section>

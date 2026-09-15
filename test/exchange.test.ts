@@ -1,20 +1,17 @@
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import { AToken, BToken, RewardExchange } from "../typechain-types";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
+import { network } from "hardhat";
+import { describe, it, beforeEach } from "mocha";
+const { ethers } = await network.connect();
 
 describe("RewardExchange 系統測試", function () {
-  let aToken: AToken;
-  let bToken: BToken;
-  let exchange: RewardExchange;
-  let owner: SignerWithAddress;
-  let user: SignerWithAddress;
-
-  const EXCHANGE_RATE = 100; // 100 A = 1 B
+  let aToken: any;
+  let bToken: any;
+  let exchange: any;
+  let user: any;
 
   beforeEach(async function () {
     // 取得測試帳號
-    [owner, user] = await ethers.getSigners();
+    [, user] = await ethers.getSigners();
 
     // 1. 部署 AToken
     const ATokenFactory = await ethers.getContractFactory("AToken");
@@ -52,7 +49,7 @@ describe("RewardExchange 系統測試", function () {
     await aToken.connect(user).approve(await exchange.getAddress(), aAmount);
 
     // 執行兌換
-    await exchange.connect(user).exchangeForB(ethers.parseEther("1"));
+    await exchange.connect(user).exchangeForB(ethers.parseEther("1"), ethers.parseEther("100"));
 
     // 檢查結果
     expect(await aToken.balanceOf(user.address)).to.equal(0);
@@ -62,9 +59,10 @@ describe("RewardExchange 系統測試", function () {
   it("當 A 代幣餘額不足時，兌換應該失敗", async function () {
     const insufficientAmount = ethers.parseEther("50");
     await aToken.mint(user.address, insufficientAmount);
+    await aToken.connect(user).approve(await exchange.getAddress(), ethers.parseEther("100"));
     
     await expect(
-      exchange.connect(user).exchangeForB(ethers.parseEther("1"))
-    ).to.be.reverted; // 預期會噴錯
+      exchange.connect(user).exchangeForB(ethers.parseEther("1"), ethers.parseEther("100"))
+    ).to.be.revertedWithCustomError(aToken, "ERC20InsufficientBalance");
   });
 });

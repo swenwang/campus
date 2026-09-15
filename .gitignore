@@ -12,3 +12,12 @@ frontend/dist/
 .DS_Store
 .vscode/
 .idea/
+
+# Local credentials, wallet exports and private audit outputs must never be published.
+*.pem
+*.key
+*.p12
+*.pfx
+keystore/
+wallet-backups/
+.local-audit/
