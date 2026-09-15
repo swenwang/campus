@@ -24,6 +24,8 @@ Campus Token is a coursework/portfolio prototype for Sepolia test ETH. Do not us
 
 The workflows run frontend tests/lint/build, contract compilation/tests/type checking, a redacted heuristic secret scan and dependency audits. High-severity advisories block deployment. Review the latest workflow result and lockfiles instead of treating an old scan count as permanent.
 
+The toolchain uses Hardhat 3 and Solidity 0.8.37. Targeted overrides pin patched `tmp`, `serialize-javascript` and `diff` versions while upstream dependency ranges catch up; compilation, tests and audit must pass against those exact lockfiles. Browser smoke tests use a simulated EIP-1193 provider, not a real MetaMask extension or a funded account.
+
 `scripts/check-public.ps1` checks tracked/unignored files and reachable Git blobs for common secret formats without printing values. This is a limited heuristic, not exhaustive secret detection. Local `.env`, wallet backups and credential files are ignored. Public commit email history is retained intentionally.
 
 Do not post private keys, seed phrases, API tokens or raw credential-bearing logs in public issues. If a secret was exposed, deleting a file is insufficient: revoke/rotate it and assess any affected accounts. Rewriting history cannot recall forks or downloaded copies.

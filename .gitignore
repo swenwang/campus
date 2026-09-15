@@ -21,3 +21,5 @@ frontend/dist/
 keystore/
 wallet-backups/
 .local-audit/
+test-results/
+playwright-report/
